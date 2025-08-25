@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Join Game of Life Bank</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(to bottom right, #fffff3, #c1e0e7);
+            min-height: 100vh;
+            color: #333;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+        }
+        .hidden-section {
+            display: none;
+        }
+    </style>
+</head>
+<body class="p-4 sm:p-8">
+    <header class="text-center mb-8 sm:mb-12">
+        <h1 class="text-4xl sm:text-5xl font-extrabold text-blue-800 tracking-tight">
+            JOIN THE GAME
+        </h1>
+        <p class="text-xl sm:text-2xl mt-2 text-blue-600 font-semibold">Enter your name to play!</p>
+    </header>
+
+    <section class="p-8 bg-white rounded-xl shadow-lg border border-blue-200 w-full max-w-md text-center">
+        <div id="loginForm">
+            <input type="text" id="playerNameInput" placeholder="Your Name" class="w-full p-3 border border-gray-300 rounded-md mb-4 text-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
+            
+            <select id="playerColorSelect" class="w-full p-3 border border-gray-300 rounded-md mb-4 text-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <option value="White" selected>Select Card Color</option>
+                <option value="Red">Red</option>
+                <option value="Yellow">Yellow</option>
+                <option value="Orange">Orange</option>
+                <option value="Blue">Blue</option>
+                <option value="White">White</option>
+                <option value="Green">Green</option>
+                <option value="Purple">Purple</option>
+                <option value="Pink">Pink</option>
+            </select>
+            <button id="joinGameBtn" class="bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-full shadow-lg transition-all duration-300 text-lg sm:text-xl">
+                Join Game
+            </button>
+            <p id="message" class="mt-4 text-red-500 font-medium"></p>
+        </div>
+        <div id="alreadyJoinedMessage" class="hidden-section text-center">
+            <p class="text-xl text-green-600 font-bold">You've successfully joined the game!</p>
+            <p class="mt-2 text-gray-700">Redirecting you to your card...</p>
+        </div>
+    </section>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getFirestore, collection, addDoc, doc, setDoc, getDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const firebaseConfig = {
+          apiKey: "AIzaSyAx2GBREwAJ-VX0x_kueY8IK51E-EvVJqA",
+          authDomain: "the-game-of-life-bank.firebaseapp.com",
+          projectId: "the-game-of-life-bank",
+          storageBucket: "the-game-of-life-bank.firebasestorage.app",
+          messagingSenderId: "793225047291",
+          appId: "1:793225047291:web:fa24d214f0f762a768545e",
+        };
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+
+        let db, auth, userId, currentSessionId = null;
+
+        const playerNameInput = document.getElementById('playerNameInput');
+        const joinGameBtn = document.getElementById('joinGameBtn');
+        const messageDiv = document.getElementById('message');
+        const loginForm = document.getElementById('loginForm');
+        const alreadyJoinedMessage = document.getElementById('alreadyJoinedMessage');
+        // ▼▼▼ START OF JAVASCRIPT MODIFICATION ▼▼▼
+        const playerColorSelect = document.getElementById('playerColorSelect');
+        // ▲▲▲ END OF JAVASCRIPT MODIFICATION ▲▲▲
+        const GOL_BANK_ACCOUNT = { name: "GOL Bank", accountNo: "GLB-3000" };
+
+        function getQueryParam(param) {
+            const urlParams = new URLSearchParams(window.location.search);
+            return urlParams.get(param);
+        }
+
+        async function initializeFirebase() {
+            try {
+                if (!firebaseConfig.projectId || firebaseConfig.projectId === "YOUR_PROJECT_ID") throw new Error("Firebase config missing");
+                const app = initializeApp(firebaseConfig);
+                db = getFirestore(app);
+                auth = getAuth(app);
+                try {
+                    if (initialAuthToken) await signInWithCustomToken(auth, initialAuthToken);
+                    else await signInAnonymously(auth);
+                } catch (authError) { await signInAnonymously(auth); }
+                onAuthStateChanged(auth, (user) => {
+                    if (user) { userId = user.uid; checkAndJoinGame(); } 
+                    else { messageDiv.textContent = "Error: Could not authenticate."; joinGameBtn.disabled = true; playerNameInput.disabled = true; }
+                });
+            } catch (error) {
+                console.error("Error initializing Firebase:", error);
+                messageDiv.textContent = "Error connecting to game.";
+                joinGameBtn.disabled = true; playerNameInput.disabled = true;
+            }
+        }
+        async function checkAndJoinGame() {
+            currentSessionId = getQueryParam('sessionId');
+            if (!currentSessionId) {
+                messageDiv.textContent = "Invalid game link. Missing session ID.";
+                joinGameBtn.disabled = true; playerNameInput.disabled = true;
+                return;
+            }
+            const playerDocRef = doc(db, `artifacts/${appId}/public/data/gameSessions/${currentSessionId}/players`, userId);
+            const playerDocSnap = await getDoc(playerDocRef);
+            if (playerDocSnap.exists()) {
+                window.location.href = `${window.location.origin}/player-card-page.html?sessionId=${currentSessionId}&playerId=${userId}`;
+            } else {
+                loginForm.classList.remove('hidden-section');
+                alreadyJoinedMessage.classList.add('hidden-section');
+            }
+        }
+        async function joinGame() {
+            const playerName = playerNameInput.value.trim();
+            // ▼▼▼ START OF JAVASCRIPT MODIFICATION ▼▼▼
+            const selectedColor = playerColorSelect.value;
+            // ▲▲▲ END OF JAVASCRIPT MODIFICATION ▲▲▲
+
+            if (!playerName) { messageDiv.textContent = "Please enter your name."; return; }
+            if (!currentSessionId) { messageDiv.textContent = "Game session not found."; return; }
+            joinGameBtn.disabled = true; playerNameInput.disabled = true;
+            messageDiv.textContent = "Joining game...";
+            try {
+                const playerDocRef = doc(db, `artifacts/${appId}/public/data/gameSessions/${currentSessionId}/players`, userId);
+                // ▼▼▼ START OF JAVASCRIPT MODIFICATION ▼▼▼
+                await setDoc(playerDocRef, {
+                    name: playerName,
+                    profession: 'Unemployed',
+                    accountNo: `GLB-${Math.floor(Math.random() * 900) + 100}`,
+                    balance: 10000,
+                    loan: 0,
+                    loanInterest: 25,
+                    currentSalary: 0,
+                    cardColor: selectedColor, // Added card color
+                    joinedAt: new Date().toISOString(),
+                    playerId: userId
+                });
+                // ▲▲▲ END OF JAVASCRIPT MODIFICATION ▲▲▲
+                await addDoc(collection(db, `artifacts/${appId}/public/data/gameSessions/${currentSessionId}/transactions`), {
+                    playerName: playerName, action: 'Initial Credit (from Bank)', amount: 10000,
+                    timestamp: serverTimestamp(), sender: GOL_BANK_ACCOUNT.name, senderAccountNo: GOL_BANK_ACCOUNT.accountNo
+                });
+                window.location.href = `${window.location.origin}/player-card-page.html?sessionId=${currentSessionId}&playerId=${userId}`;
+            } catch (error) {
+                console.error("Error joining game:", error);
+                messageDiv.textContent = "Error joining game. Please try again.";
+                joinGameBtn.disabled = false; playerNameInput.disabled = false;
+            }
+        }
+        joinGameBtn.addEventListener('click', joinGame);
+        playerNameInput.addEventListener('keypress', (event) => { if (event.key === 'Enter') joinGame(); });
+        window.onload = initializeFirebase;
+    </script>
+</body>
+</html>

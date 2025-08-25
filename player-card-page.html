@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Game of Life Card</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background: black;
+            min-height: 100vh;
+            color: #333;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            padding: 0;
+        }
+        .hidden-section {
+            display: none;
+        }
+        .eye-icon {
+            cursor: pointer;
+            width: 24px;
+            height: 24px;
+            fill: currentColor;
+            transition: fill 0.2s ease-in-out;
+        }
+        .eye-icon:hover {
+            fill: #60a5fa;
+        }
+        .slider-drawer {
+            max-height: 0;
+            padding-top: 0;
+            padding-bottom: 0;
+            transition: max-height 0.3s ease-out, padding 0.3s ease-out;
+            overflow: hidden;
+        }
+        .slider-drawer.open {
+            max-height: 120px;
+            padding-top: 1.5rem;
+            padding-bottom: 1.5rem;
+        }
+        .transactions-table-container table {
+            border-collapse: collapse;
+            width: 100%;
+        }
+        .transactions-table-container th,
+        .transactions-table-container td {
+            border: none;
+            vertical-align: top;
+            padding: 0.5rem;
+            color: white;
+        }
+        .transactions-table-container th {
+            text-align: left;
+            font-weight: 600;
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+        .transactions-table-container tr:nth-child(even) {
+            background-color: rgba(255, 255, 255, 0.05);
+        }
+        .tab-button {
+            padding: 8px 12px;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            transition: all 0.3s ease;
+            color: #9ca3af;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+        .tab-button.active {
+            color: white;
+            border-bottom-color: #3b82f6;
+        }
+        .transaction-slider-wrapper {
+            overflow: hidden;
+            width: 100%;
+        }
+        .transaction-slider {
+            display: flex;
+            width: 300%;
+            transition: transform 0.4s ease-in-out;
+        }
+        .transaction-panel {
+            width: 33.333%;
+            padding: 0 1rem;
+            box-sizing: border-box;
+        }
+        .show-transfer-panel .transaction-slider {
+            transform: translateX(-33.333%);
+        }
+        .show-loan-panel .transaction-slider {
+            transform: translateX(-66.666%);
+        }
+
+    </style>
+</head>
+<body class="w-full"> 
+    <header class="text-center mb-4 sm:mb-6 pt-4 px-2 sm:px-8"> 
+        <p id="loadingMessage" class="text-xl sm:text-2xl mt-2 text-white-600 font-semibold">Loading your card...</p>
+    </header>
+
+    <section id="playerCardSection" class="hidden-section relative p-4 rounded-xl shadow-lg border w-full max-w-sm h-56 flex flex-col justify-between text-left overflow-hidden mx-auto">
+        <div class="absolute top-4 right-4 z-10">
+            <svg id="toggleSliderVisibility" class="eye-icon text-gray-700" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle>
+            </svg>
+        </div>
+        <div class="mb-auto">
+            <h3 id="playerName" class="text-2xl font-bold text-gray-800 mb-0.5">PLAYER NAME</h3>
+            <p class="text-lg text-gray-700"><span id="playerProfession" class="font-semibold text-gray-900">Unemployed</span></p>
+        </div>
+        <div class="w-full mt-auto">
+            <p class="text-base text-gray-700 mb-1">ACC NO: <span id="playerAccountNo" class="font-medium">GLB-XXX</span></p>
+            <div class="mt-2 w-full h-10 bg-gray-200/50 rounded-sm flex items-center justify-start overflow-hidden">
+                <svg width="100%" height="100%" viewBox="0 0 100 20" preserveAspectRatio="none"><rect x="0" y="0" width="2" height="20" fill="#333" /><rect x="3" y="0" width="1" height="20" fill="#333" /><rect x="5" y="0" width="3" height="20" fill="#333" /><rect x="9" y="0" width="2" height="20" fill="#333" /><rect x="12" y="0" width="1" height="20" fill="#333" /><rect x="14" y="0" width="2" height="20" fill="#333" /><rect x="17" y="0" width="3" height="20" fill="#333" /><rect x="21" y="0" width="1" height="20" fill="#333" /><rect x="23" y="0" width="2" height="20" fill="#333" /><rect x="26" y="0" width="1" height="20" fill="#333" /><rect x="28" y="0" width="2" height="20" fill="#333" /><rect x="31" y="0" width="3" height="20" fill="#333" /><rect x="35" y="0" width="1" height="20" fill="#333" /><rect x="37" y="0" width="2" height="20" fill="#333" /><rect x="40" y="0" width="1" height="20" fill="#333" /><rect x="42" y="0" width="2" height="20" fill="#333" /><rect x="45" y="0" width="3" height="20" fill="#333" /><rect x="49" y="0" width="2" height="20" fill="#333" /><rect x="52" y="0" width="1" height="20" fill="#333" /><rect x="54" y="0" width="2" height="20" fill="#333" /><rect x="57" y="0" width="1" height="20" fill="#333" /><rect x="59" y="0" width="2" height="20" fill="#333" /><rect x="62" y="0" width="3" height="20" fill="#333" /><rect x="66" y="0" width="1" height="20" fill="#333" /><rect x="68" y="0" width="2" height="20" fill="#333" /><rect x="71" y="0" width="1" height="20" fill="#333" /><rect x="73" y="0" width="2" height="20" fill="#333" /><rect x="76" y="0" width="3" height="20" fill="#333" /><rect x="80" y="0" width="1" height="20" fill="#333" /><rect x="82" y="0" width="2" height="20" fill="#333" /><rect x="85" y="0" width="1" height="20" fill="#333" /><rect x="87" y="0" width="2" height="20" fill="#333" /><rect x="90" y="0" width="3" height="20" fill="#333" /><rect x="94" y="0" width="1" height="20" fill="#333" /><rect x="96" y="0" width="2" height="20" fill="#333" /></svg>
+            </div>
+        </div>
+        <div id="balanceLoanDrawer" class="absolute bottom-0 left-0 right-0 bg-white/70 backdrop-blur-sm rounded-b-xl slider-drawer flex flex-col justify-center items-center text-center border-t border-gray-300">
+            <div class="w-full flex justify-start items-center pl-4"><p class="text-base text-gray-800"><span class="inline-block w-20">Balance:</span> <span id="playerBalance">*****</span></p></div>
+            <div class="w-full flex justify-start items-center pl-4"><p class="text-base text-gray-800"><span class="inline-block w-20">Loan:</span> <span id="playerLoan" class="text-red-600">*****</span></p></div>
+        </div>
+    </section>
+
+    <section id="sessionEndedSection" class="hidden-section text-center p-8 bg-red-100 rounded-xl shadow-lg border border-red-300 w-full max-w-md mx-auto">
+        <p class="text-2xl font-bold text-red-700 mb-4">Game Session Ended!</p>
+        <p class="text-lg text-gray-700">The host has ended this game session. You can ask the host for a new game link.</p>
+    </section>
+
+    <section id="transactionsContainerSection" class="mt-8 mb-12 hidden-section w-full max-w-sm mx-auto bg-black px-2 sm:px-4 py-4 rounded-xl shadow-lg">
+        <div id="transactionTabs" class="flex justify-center border-b border-gray-700 mb-4">
+            <button id="showHistoryTab" class="tab-button active">History</button>
+            <button id="showTransferTab" class="tab-button">Send Money</button>
+            <button id="showLoanTab" class="tab-button">Repay Loan</button>
+        </div>
+        <div class="transaction-slider-wrapper">
+            <div id="transactionSlider" class="transaction-slider">
+                <div id="historyPanel" class="transaction-panel">
+                    <h2 class="text-xl font-bold text-blue-500 mb-4 text-center">Transaction History</h2>
+                    <div class="transactions-table-container">
+                        <table class="w-full">
+                            <thead><tr><th class="text-left py-2 px-2">Details</th><th class="text-right py-2 px-2">Amount</th></tr></thead>
+                            <tbody id="transactionsTableBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+                <div id="newTransactionPanel" class="transaction-panel">
+                    <h2 class="text-xl font-bold text-blue-500 mb-4 text-center">Send Money</h2>
+                    <div class="space-y-4 text-center">
+                        <div>
+                            <label for="recipientPlayerSelect" class="block text-sm font-medium text-gray-300 mb-1">Recipient</label>
+                            <select id="recipientPlayerSelect" class="w-full p-2 bg-gray-800 border border-gray-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-blue-500"></select>
+                        </div>
+                        <div>
+                            <label for="transferAmountInput" class="block text-sm font-medium text-gray-300 mb-1">Amount (multiples of $1,000)</label>
+                            <input type="number" id="transferAmountInput" placeholder="$0" class="w-full p-2 bg-gray-800 border border-gray-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-blue-500" min="0" step="1000">
+                        </div>
+                        <button id="sendTransferBtn" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-6 rounded-md transition-colors duration-200">Send Money</button>
+                        <p id="transferMessage" class="mt-2 text-center text-sm h-4"></p>
+                    </div>
+                </div>
+                <div id="loanPanel" class="transaction-panel">
+                    <h2 class="text-xl font-bold text-blue-500 mb-4 text-center">Repay Loan</h2>
+                    <div class="space-y-4 text-center">
+                        <div class="text-center text-white">
+                            <p class="text-sm text-gray-400">Current Loan Principal</p>
+                            <p id="loanPanelCurrentLoan" class="text-lg font-bold text-red-500">$0</p>
+                            
+                            <p class="text-sm text-gray-400 mt-1">Total to Repay (with Interest)</p>
+                            <p class="text-xl font-bold text-orange-400" id="totalRepayAmount">$0</p>
+
+                            <p class="text-xs text-center text-yellow-500 mt-2">Current Interest: <span id="currentInterestRate">25</span>%</p>
+                        </div>
+                        <div>
+                            <label id="repayLoanLabel" for="repayLoanAmountInput" class="block text-sm font-medium text-gray-300 mb-1">Amount to Repay</label>
+                            <input type="number" id="repayLoanAmountInput" placeholder="$0" class="w-full p-2 bg-gray-800 border border-gray-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-blue-500" min="0">
+                        </div>
+                        <button id="repayLoanBtn" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-6 rounded-md transition-colors duration-200">Repay Loan</button>
+                        <p id="repayLoanMessage" class="mt-2 text-center text-sm h-4"></p>
+                    </div>
+                </div>
+                </div>
+        </div>
+    </section>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getFirestore, doc, onSnapshot, collection, query, orderBy, addDoc, runTransaction, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        
+        // ▼▼▼ START OF JAVASCRIPT MODIFICATIONS ▼▼▼
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const firebaseConfig = {
+          apiKey: "AIzaSyAx2GBREwAJ-VX0x_kueY8IK51E-EvVJqA",
+          authDomain: "the-game-of-life-bank.firebaseapp.com",
+          projectId: "the-game-of-life-bank",
+          storageBucket: "the-game-of-life-bank.firebasestorage.app",
+          messagingSenderId: "793225047291",
+          appId: "1:793225047291:web:fa24d214f0f762a768545e",
+        };
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+        let db, auth, userId;
+        const loadingMessage = document.getElementById('loadingMessage');
+        const playerCardSection = document.getElementById('playerCardSection');
+        const playerNameElem = document.getElementById('playerName');
+        const playerProfessionElem = document.getElementById('playerProfession');
+        const playerAccountNoElem = document.getElementById('playerAccountNo');
+        const playerBalanceElem = document.getElementById('playerBalance');
+        const playerLoanElem = document.getElementById('playerLoan');
+        const toggleSliderVisibilityBtn = document.getElementById('toggleSliderVisibility');
+        const balanceLoanDrawer = document.getElementById('balanceLoanDrawer');
+        const sessionEndedSection = document.getElementById('sessionEndedSection');
+        const transactionsTableBody = document.getElementById('transactionsTableBody');
+        const transactionsContainerSection = document.getElementById('transactionsContainerSection');
+        const showHistoryTab = document.getElementById('showHistoryTab');
+        const showTransferTab = document.getElementById('showTransferTab');
+        const recipientPlayerSelect = document.getElementById('recipientPlayerSelect');
+        const transferAmountInput = document.getElementById('transferAmountInput');
+        const sendTransferBtn = document.getElementById('sendTransferBtn');
+        const transferMessage = document.getElementById('transferMessage');
+        const showLoanTab = document.getElementById('showLoanTab');
+        const loanPanelCurrentLoan = document.getElementById('loanPanelCurrentLoan');
+        const repayLoanAmountInput = document.getElementById('repayLoanAmountInput');
+        const repayLoanBtn = document.getElementById('repayLoanBtn');
+        const repayLoanMessage = document.getElementById('repayLoanMessage');
+        const currentInterestRate = document.getElementById('currentInterestRate');
+        const repayLoanLabel = document.getElementById('repayLoanLabel');
+        const totalRepayAmount = document.getElementById('totalRepayAmount'); // New element reference
+        let currentPlayerInterest = 25;
+        const LOAN_PRINCIPAL_CHUNK = 20000;
+        // ▲▲▲ END OF JAVASCRIPT MODIFICATIONS ▲▲▲
+        
+        const colorGradients = {
+            Red: 'linear-gradient(to bottom right, #fecaca, #f87171)', Yellow: 'linear-gradient(to bottom right, #fef08a, #facc15)',
+            Orange: 'linear-gradient(to bottom right, #fed7aa, #fb923c)', Blue: 'linear-gradient(to bottom right, #bfdbfe, #60a5fa)',
+            White: 'linear-gradient(to bottom right, #f9fafb, #e5e7eb)', Green: 'linear-gradient(to bottom right, #bbf7d0, #4ade80)',
+            LightBlue: 'linear-gradient(to bottom right, #bae6fd, #38bdf8)', Pink: 'linear-gradient(to bottom right, #fbcfe8, #f472b6)',
+            Purple: 'linear-gradient(to bottom right, #e9d5ff, #c084fc)'
+        };
+        const clickSynth = new Tone.Synth({ oscillator: { type: "sine" }, envelope: { attack: 0.001, decay: 0.1, sustain: 0, release: 0.05 } }).toDestination();
+        let isSliderOpen = false;
+        let currentPlayerBalance = 0;
+        let currentPlayerLoan = 0;
+        let currentPlayerData = {};
+        const GOL_BANK_ACCOUNT = { name: "GOL Bank", accountNo: "GLB-3000" };
+
+        function getQueryParam(param) { return new URLSearchParams(window.location.search).get(param); }
+
+        async function initializeFirebase() {
+            try {
+                if (!firebaseConfig.projectId || firebaseConfig.projectId === "YOUR_PROJECT_ID") throw new Error("Firebase config missing");
+                const app = initializeApp(firebaseConfig);
+                db = getFirestore(app);
+                auth = getAuth(app);
+                try {
+                    if (initialAuthToken) await signInWithCustomToken(auth, initialAuthToken);
+                    else await signInAnonymously(auth);
+                } catch (authError) { await signInAnonymously(auth); }
+                onAuthStateChanged(auth, (user) => {
+                    if (user) { userId = user.uid; loadPlayerCard(); } 
+                    else { loadingMessage.textContent = "Error: Could not authenticate."; }
+                });
+            } catch (error) { console.error("Error initializing Firebase:", error); loadingMessage.textContent = "Error connecting to card data."; }
+        }
+
+        async function loadPlayerCard() {
+            const sessionId = getQueryParam('sessionId'), playerIdFromURL = getQueryParam('playerId');
+            if (!sessionId || !playerIdFromURL) { loadingMessage.textContent = "Invalid link."; return; }
+            const gameSessionDocRef = doc(db, `artifacts/${appId}/public/data/gameSessions`, sessionId);
+            onSnapshot(gameSessionDocRef, (sessionDocSnap) => {
+                if (!sessionDocSnap.exists()) {
+                    playerCardSection.classList.add('hidden-section');
+                    transactionsContainerSection.classList.add('hidden-section');
+                    sessionEndedSection.classList.remove('hidden-section');
+                } else {
+                    sessionEndedSection.classList.add('hidden-section');
+                    const playerDocRef = doc(db, `artifacts/${appId}/public/data/gameSessions/${sessionId}/players`, playerIdFromURL);
+                    onSnapshot(playerDocRef, (playerDocSnap) => {
+                        if (playerDocSnap.exists()) {
+                            currentPlayerData = playerDocSnap.data();
+                            playerNameElem.textContent = currentPlayerData.name ? currentPlayerData.name.toUpperCase() : 'UNKNOWN';
+                            playerProfessionElem.textContent = currentPlayerData.profession || 'Unemployed';
+                            playerAccountNoElem.textContent = currentPlayerData.accountNo || 'GLB-XXX';
+                            currentPlayerBalance = currentPlayerData.balance || 0;
+                            currentPlayerLoan = currentPlayerData.loan || 0;
+                            playerBalanceElem.textContent = `$${currentPlayerBalance.toLocaleString()}`;
+                            playerLoanElem.textContent = `$${currentPlayerLoan.toLocaleString()}`;
+                            currentPlayerInterest = currentPlayerData.loanInterest || 25;
+                            const playerColor = currentPlayerData.cardColor || 'White';
+                            const gradientStyle = colorGradients[playerColor] || colorGradients['White'];
+                            playerCardSection.style.background = gradientStyle;
+                            updateLoanUI();
+                            loadingMessage.classList.add('hidden-section');
+                            playerCardSection.classList.remove('hidden-section');
+                            transactionsContainerSection.classList.remove('hidden-section');
+                            setupTransactionListener(sessionId);
+                            setupOtherPlayersListener(sessionId, playerIdFromURL);
+                        } else {
+                            loadingMessage.textContent = "Player card not found.";
+                        }
+                    });
+                }
+            });
+        }
+        
+        // ▼▼▼ START OF JAVASCRIPT MODIFICATIONS ▼▼▼
+        function updateLoanUI() {
+            loanPanelCurrentLoan.textContent = `$${currentPlayerLoan.toLocaleString()}`;
+            currentInterestRate.textContent = currentPlayerInterest;
+
+            const totalToRepay = currentPlayerLoan * (1 + currentPlayerInterest / 100);
+            totalRepayAmount.textContent = `$${Math.ceil(totalToRepay).toLocaleString()}`; // Round up to nearest dollar
+
+            const repaymentChunk = LOAN_PRINCIPAL_CHUNK * (1 + currentPlayerInterest / 100);
+            repayLoanLabel.textContent = `Amount (multiples of $${repaymentChunk.toLocaleString()})`;
+            repayLoanAmountInput.step = repaymentChunk;
+            repayLoanAmountInput.placeholder = `$${repaymentChunk.toLocaleString()}`;
+        }
+        // ▲▲▲ END OF JAVASCRIPT MODIFICATIONS ▲▲▲
+        
+        function setupOtherPlayersListener(sessionId, currentPlayerId) { /* Function is unchanged */
+            const playersColRef = collection(db, `artifacts/${appId}/public/data/gameSessions/${sessionId}/players`);
+            onSnapshot(playersColRef, (snapshot) => {
+                const otherPlayers = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })).filter(player => player.id !== currentPlayerId);
+                recipientPlayerSelect.innerHTML = '<option value="">Select a recipient...</option>';
+                otherPlayers.forEach(player => { const option = document.createElement('option'); option.value = player.id; option.textContent = player.name; recipientPlayerSelect.appendChild(option); });
+                const bankOption = document.createElement('option'); bankOption.value = 'BANK'; bankOption.textContent = 'GOL Bank'; recipientPlayerSelect.appendChild(bankOption);
+            });
+        }
+        function setupTransactionListener(sessionId) { /* Function is unchanged */
+            const q = query(collection(db, `artifacts/${appId}/public/data/gameSessions/${sessionId}/transactions`), orderBy('timestamp', 'desc'));
+            onSnapshot(q, (snapshot) => {
+                const allTransactions = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                const playerTransactions = allTransactions.filter(tx => {
+                    const upperPlayerName = playerNameElem.textContent;
+                    const isBankTxForPlayer = tx.playerName && (tx.playerName.toUpperCase() === upperPlayerName);
+                    const isSender = tx.sender && (tx.sender.toUpperCase() === upperPlayerName);
+                    const isReceiver = tx.receiver && (tx.receiver.toUpperCase() === upperPlayerName);
+                    return isBankTxForPlayer || isSender || isReceiver;
+                });
+                renderTransactions(playerTransactions);
+            });
+        }
+        function playClickSound() { if (Tone.context.state !== 'running') Tone.start(); clickSynth.triggerAttackRelease("G5", "0.05"); }
+        function renderTransactions(transactions) { /* Function is unchanged */
+            transactionsTableBody.innerHTML = '';
+            transactions.forEach((tx) => {
+                let amountDisplay = `$${tx.amount.toLocaleString()}`;
+                let typeIndicator = ''; let detailsName = ''; let detailsAccount = '';
+                if (tx.action === 'Player Transfer') {
+                    if (tx.sender && tx.sender.toUpperCase() === playerNameElem.textContent) {
+                        typeIndicator = 'DR'; amountDisplay = `<span class="text-red-400">${amountDisplay}</span>`; detailsName = tx.receiver; detailsAccount = `To: ${tx.receiverAccountNo}`;
+                    } else {
+                        typeIndicator = 'CR'; amountDisplay = `<span class="text-green-400">${amountDisplay}</span>`; detailsName = tx.sender; detailsAccount = `From: ${tx.senderAccountNo}`;
+                    }
+                } else {
+                    detailsName = GOL_BANK_ACCOUNT.name; detailsAccount = GOL_BANK_ACCOUNT.accountNo;
+                    if (tx.action.includes('Credit') || tx.action.includes('Paycheck') || tx.action === 'Loan') {
+                        typeIndicator = 'CR'; amountDisplay = `<span class="text-green-400">${amountDisplay}</span>`;
+                    } else if (tx.action.includes('Debit') || tx.action === 'Loan Repayment' || tx.action === 'Payment to Bank') {
+                        typeIndicator = 'DR'; amountDisplay = `<span class="text-red-400">${amountDisplay}</span>`;
+                    }
+                }
+                const rowHtml = `<tr><td class="py-1 px-2"><div class="text-base font-semibold">${detailsName}</div><div class="text-xs text-gray-300">${detailsAccount}</div></td><td class="py-1 px-2 text-right"><div class="text-base">${amountDisplay} <span class="text-sm font-semibold">${typeIndicator}</span></div><div class="text-xs text-gray-300">${tx.action}</div></td></tr>`;
+                transactionsTableBody.insertAdjacentHTML('beforeend', rowHtml);
+            });
+        }
+        async function sendMoneyToPlayer() { /* Function is unchanged */
+            const recipientId = recipientPlayerSelect.value, amount = parseInt(transferAmountInput.value, 10);
+            if (!recipientId) { transferMessage.textContent = "Please select a recipient."; transferMessage.className = "text-red-500 text-center text-sm h-4"; return; }
+            if (isNaN(amount) || amount <= 0 || amount % 1000 !== 0) { transferMessage.textContent = "Amount must be a multiple of $1,000."; transferMessage.className = "text-red-500 text-center text-sm h-4"; return; }
+            if (amount > currentPlayerBalance) { transferMessage.textContent = "Insufficient funds."; transferMessage.className = "text-red-500 text-center text-sm h-4"; return; }
+            sendTransferBtn.disabled = true; transferMessage.textContent = "Processing..."; transferMessage.className = "text-yellow-500 text-center text-sm h-4";
+            const sessionId = getQueryParam('sessionId'), senderId = getQueryParam('playerId'), senderRef = doc(db, `artifacts/${appId}/public/data/gameSessions/${sessionId}/players`, senderId);
+            try {
+                if (recipientId === 'BANK') {
+                    await runTransaction(db, async (transaction) => {
+                        const senderDoc = await transaction.get(senderRef); if (!senderDoc.exists()) throw "Sender not found.";
+                        const senderData = senderDoc.data(); if (senderData.balance < amount) throw "Insufficient funds.";
+                        transaction.update(senderRef, { balance: senderData.balance - amount });
+                        await addDoc(collection(db, `artifacts/${appId}/public/data/gameSessions/${sessionId}/transactions`), { playerName: senderData.name, action: 'Payment to Bank', amount, timestamp: serverTimestamp() });
+                    });
+                } else {
+                    const recipientRef = doc(db, `artifacts/${appId}/public/data/gameSessions/${sessionId}/players`, recipientId);
+                    await runTransaction(db, async (transaction) => {
+                        const senderDoc = await transaction.get(senderRef); const recipientDoc = await transaction.get(recipientRef); if (!senderDoc.exists() || !recipientDoc.exists()) throw "Sender or recipient not found.";
+                        const senderData = senderDoc.data(); const recipientData = recipientDoc.data(); if (senderData.balance < amount) throw "Insufficient funds.";
+                        transaction.update(senderRef, { balance: senderData.balance - amount }); transaction.update(recipientRef, { balance: recipientData.balance + amount });
+                        await addDoc(collection(db, `artifacts/${appId}/public/data/gameSessions/${sessionId}/transactions`), { action: 'Player Transfer', amount, sender: senderData.name, senderAccountNo: senderData.accountNo, receiver: recipientData.name, receiverAccountNo: recipientData.accountNo, timestamp: serverTimestamp() });
+                    });
+                }
+                transferMessage.textContent = "Transfer successful!"; transferMessage.className = "text-green-500 text-center text-sm h-4"; transferAmountInput.value = ''; recipientPlayerSelect.value = '';
+            } catch (error) { console.error("Transaction failed: ", error); transferMessage.textContent = "Transaction failed: " + error; transferMessage.className = "text-red-500 text-center text-sm h-4";
+            } finally { sendTransferBtn.disabled = false; setTimeout(() => transferMessage.textContent = '', 3000); }
+        }
+        async function repayLoan() { /* Function is unchanged */
+            const repaymentAmount = parseInt(repayLoanAmountInput.value, 10);
+            const repaymentChunk = LOAN_PRINCIPAL_CHUNK * (1 + currentPlayerInterest / 100);
+            if (currentPlayerLoan <= 0) { repayLoanMessage.textContent = "You have no loan to repay."; repayLoanMessage.className = "text-yellow-500 text-center text-sm h-4"; return; }
+            if (isNaN(repaymentAmount) || repaymentAmount <= 0) { repayLoanMessage.textContent = "Please enter a valid amount."; repayLoanMessage.className = "text-red-500 text-center text-sm h-4"; return; }
+            if (repaymentAmount % repaymentChunk !== 0) { repayLoanMessage.textContent = `Amount must be a multiple of $${repaymentChunk.toLocaleString()}.`; repayLoanMessage.className = "text-red-500 text-center text-sm h-4"; return; }
+            if (repaymentAmount > currentPlayerBalance) { repayLoanMessage.textContent = "Insufficient balance."; repayLoanMessage.className = "text-red-500 text-center text-sm h-4"; return; }
+            const principalCleared = (repaymentAmount / repaymentChunk) * LOAN_PRINCIPAL_CHUNK;
+            if (principalCleared > currentPlayerLoan) { repayLoanMessage.textContent = "Amount exceeds loan balance."; repayLoanMessage.className = "text-red-500 text-center text-sm h-4"; return; }
+            repayLoanBtn.disabled = true; repayLoanMessage.textContent = "Processing..."; repayLoanMessage.className = "text-yellow-500 text-center text-sm h-4";
+            const sessionId = getQueryParam('sessionId'), playerId = getQueryParam('playerId'), playerRef = doc(db, `artifacts/${appId}/public/data/gameSessions/${sessionId}/players`, playerId);
+            try {
+                await runTransaction(db, async (transaction) => {
+                    const playerDoc = await transaction.get(playerRef); if (!playerDoc.exists()) throw "Player not found.";
+                    const playerData = playerDoc.data();
+                    if (playerData.balance < repaymentAmount) throw "Insufficient funds.";
+                    if (principalCleared > playerData.loan) throw "Repayment amount exceeds loan.";
+                    transaction.update(playerRef, { balance: playerData.balance - repaymentAmount, loan: playerData.loan - principalCleared });
+                    await addDoc(collection(db, `artifacts/${appId}/public/data/gameSessions/${sessionId}/transactions`), { playerName: playerData.name, action: 'Loan Repayment', amount: repaymentAmount, timestamp: serverTimestamp() });
+                });
+                repayLoanMessage.textContent = "Repayment successful!"; repayLoanMessage.className = "text-green-500 text-center text-sm h-4"; repayLoanAmountInput.value = '';
+            } catch (error) { console.error("Loan repayment failed: ", error); repayLoanMessage.textContent = "Repayment failed: " + error; repayLoanMessage.className = "text-red-500 text-center text-sm h-4";
+            } finally { repayLoanBtn.disabled = false; setTimeout(() => repayLoanMessage.textContent = '', 3000); }
+        }
+        function updateBalanceDisplay() { playerBalanceElem.textContent = isSliderOpen ? `$${currentPlayerBalance.toLocaleString()}`: '*****'; }
+        function updateLoanDisplay() { playerLoanElem.textContent = isSliderOpen ? `$${currentPlayerLoan.toLocaleString()}` : '*****'; }
+        function toggleSlider() {
+            isSliderOpen = !isSliderOpen; playClickSound();
+            if (isSliderOpen) {
+                balanceLoanDrawer.classList.add('open');
+                toggleSliderVisibilityBtn.innerHTML = '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle>';
+            } else {
+                balanceLoanDrawer.classList.remove('open');
+                toggleSliderVisibilityBtn.innerHTML = '<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.05 18.05 0 0 1 2.94-3.06M18.5 14.5L22 18M2 6L6 10"></path><line x1="1" y1="1" x2="23" y2="23"></line><circle cx="12" cy="12" r="3"></circle>';
+            }
+            updateBalanceDisplay(); updateLoanDisplay();
+        }
+        toggleSliderVisibilityBtn.addEventListener('click', toggleSlider);
+        sendTransferBtn.addEventListener('click', sendMoneyToPlayer);
+        showHistoryTab.addEventListener('click', () => { transactionsContainerSection.classList.remove('show-transfer-panel', 'show-loan-panel'); showHistoryTab.classList.add('active'); showTransferTab.classList.remove('active'); showLoanTab.classList.remove('active'); });
+        showTransferTab.addEventListener('click', () => { transactionsContainerSection.classList.add('show-transfer-panel'); transactionsContainerSection.classList.remove('show-loan-panel'); showHistoryTab.classList.remove('active'); showTransferTab.classList.add('active'); showLoanTab.classList.remove('active'); });
+        showLoanTab.addEventListener('click', () => { transactionsContainerSection.classList.add('show-loan-panel'); transactionsContainerSection.classList.remove('show-transfer-panel'); showHistoryTab.classList.remove('active'); showTransferTab.classList.remove('active'); showLoanTab.classList.add('active'); updateLoanUI(); });
+        repayLoanBtn.addEventListener('click', repayLoan);
+        window.onload = initializeFirebase;
+    </script>
+</body>
+</html>

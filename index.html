@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Game of Life Bank - Host</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts - Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* Custom styles for the Inter font and a subtle background gradient */
+        body {
+            font-family: 'Inter', sans-serif;
+            /* background: linear-gradient(to bottom right, #fffff3, #ffffff);  Light blue to greenish-blue gradient */
+            min-height: 100vh; /* Ensure body takes full viewport height */
+            color: #333; /* Darker text for readability */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem; /* Add some padding for smaller screens */
+        }
+        /* Custom class for hidden elements, to be toggled by JS */
+        .hidden-section {
+            display: none;
+        }
+    </style>
+</head>
+<body class="p-4 sm:p-8">
+    <!-- Main Header -->
+    <header class="text-center mb-8 sm:mb-12">
+        <!-- <h1 class="text-4xl sm:text-5xl md:text-6xl font-extrabold text-blue-800 tracking-tight">
+            THE GAME OF LIFE BANK
+        </h1> -->
+        <img src="Game of Life Logo.jpeg"
+             alt="The Game of Life Bank Logo"
+             class="w-full max-w-xl mx-auto h-auto object-contain mb-2">
+    </header>
+
+    <!-- Initial Game Setup Section -->
+    <section id="initialSetupSection" class="flex flex-col items-center justify-center p-8 bg-white rounded-xl shadow-lg border border-blue-200">
+        <!-- Plus Button - initially disabled and hidden until Firebase is ready -->
+        <button id="createGamePlusBtn" class="w-24 h-24 sm:w-32 sm:h-32 bg-blue-600 hover:bg-blue-700 text-white text-6xl sm:text-7xl font-bold rounded-full flex items-center justify-center shadow-lg transition-all duration-300 opacity-50 cursor-not-allowed hidden-section">
+            +
+        </button>
+        <p id="loadingMessage" class="mt-4 text-gray-600">Initializing bank system...</p>
+
+        <div id="joinLinkContainer" class="mt-8 flex flex-col items-center hidden-section">
+            <p class="text-gray-700 text-lg mb-4 text-center">Share this link with players to join:</p>
+            <input type="text" id="joinLink" class="w-full sm:w-80 p-2 border border-gray-300 rounded-md text-center text-sm bg-gray-50 mt-1" readonly />
+            <button id="copyLinkBtn" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-2 px-4 rounded-full mt-3 transition-colors duration-200">
+                Copy Link
+            </button>
+            <p class="text-sm text-gray-500 mt-4 text-center">
+                <a href="bank-dashboard.html" class="text-blue-600 hover:underline">Go to Bank Dashboard</a> to manage the game.
+            </p>
+        </div>
+    </section>
+
+    <script type="module">
+        // Import Firebase modules
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getFirestore, collection, addDoc, doc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js"; // Added serverTimestamp
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+
+        // Global variables provided by the Canvas environment (essential for Firebase)
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        // IMPORTANT: You MUST replace the placeholder values below with your actual firebaseConfig object
+        // copied directly from your Firebase Console. Go to Project settings -> Your apps -> Web app -> Config.
+        const firebaseConfig = {
+          apiKey: "AIzaSyAx2GBREwAJ-VX0x_kueY8IK51E-EvVJqA", // REPLACE THIS
+          authDomain: "the-game-of-life-bank.firebaseapp.com", // REPLACE THIS
+          projectId: "the-game-of-life-bank", // REPLACE THIS
+          storageBucket: "the-game-of-life-bank.firebasestorage.app", // REPLACE THIS
+          messagingSenderId: "793225047291", // REPLACE THIS
+          appId: "1:793225047291:web:fa24d214f0f762a768545e", // REPLACE THIS
+          // measurementId: "G-8HYQL0V1MJ" // Optional: Include if present in your Firebase config
+        };
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+
+        let db; // Firestore instance
+        let auth; // Auth instance
+        let userId; // Current user ID (bank owner in this case)
+
+        // Elements
+        const createGamePlusBtn = document.getElementById('createGamePlusBtn');
+        const loadingMessage = document.getElementById('loadingMessage');
+        const initialSetupSection = document.getElementById('initialSetupSection');
+        const joinLinkContainer = document.getElementById('joinLinkContainer');
+        const joinLinkInput = document.getElementById('joinLink');
+        const copyLinkBtn = document.getElementById('copyLinkBtn');
+
+        // Function to initialize Firebase
+        async function initializeFirebase() {
+            try {
+                // Check if firebaseConfig is correctly populated
+                if (!firebaseConfig.projectId || firebaseConfig.projectId === "YOUR_PROJECT_ID") {
+                    console.error("Firebase Initialization Error: 'projectId' is missing or still default. Please update firebaseConfig.");
+                    loadingMessage.textContent = "ERROR: Firebase config missing! Paste your actual config (see console).";
+                    loadingMessage.classList.remove('hidden-section');
+                    createGamePlusBtn.classList.add('hidden-section'); // Keep button hidden if config is bad
+                    return; // Stop initialization
+                }
+                console.log("Firebase config being used:", firebaseConfig); // Log config for debugging
+
+
+                const app = initializeApp(firebaseConfig);
+                db = getFirestore(app);
+                auth = getAuth(app);
+
+                // Authenticate the user - Try custom token, fallback to anonymous if mismatch
+                try {
+                    if (initialAuthToken) {
+                        await signInWithCustomToken(auth, initialAuthToken);
+                        console.log("Signed in with custom token.");
+                    } else {
+                        await signInAnonymously(auth);
+                        console.log("Signed in anonymously (no custom token available).");
+                    }
+                } catch (authError) {
+                    console.warn("Custom token sign-in failed (possibly mismatch/expired). Falling back to anonymous sign-in:", authError);
+                    await signInAnonymously(auth); // Fallback
+                    console.log("Signed in anonymously after custom token failure.");
+                }
+
+
+                // Listen for auth state changes and set userId
+                onAuthStateChanged(auth, (user) => {
+                    if (user) {
+                        userId = user.uid;
+                        console.log("Firebase initialized. User ID:", userId);
+                        loadingMessage.classList.add('hidden-section'); // Hide loading message
+
+                        // Check if a game session already exists from a previous load
+                        const storedSessionId = localStorage.getItem('gameSessionId');
+                        if (storedSessionId) {
+                            // If a session exists, display the join link for that session
+                            initialSetupSection.classList.remove('hidden-section');
+                            joinLinkContainer.classList.remove('hidden-section'); // Show link container
+                            createGamePlusBtn.classList.add('hidden-section');
+                            renderExistingJoinLink(storedSessionId); // Updated function call
+                        } else {
+                            // If no session, show the plus button, enable it, and remove opacity
+                            initialSetupSection.classList.remove('hidden-section');
+                            createGamePlusBtn.classList.remove('hidden-section', 'opacity-50', 'cursor-not-allowed');
+                            createGamePlusBtn.disabled = false;
+                            joinLinkContainer.classList.add('hidden-section'); // Keep link hidden
+                        }
+
+                    } else {
+                        // User is signed out
+                        console.log("No user signed in.");
+                        loadingMessage.textContent = "Error: Could not authenticate with Firebase. Check console.";
+                        loadingMessage.classList.remove('hidden-section');
+                        createGamePlusBtn.classList.add('hidden-section'); // Keep button hidden if auth fails
+                    }
+                });
+
+            } catch (error) {
+                console.error("Error initializing Firebase:", error);
+                loadingMessage.textContent = "Error: Could not connect to Firebase. Check console for details.";
+                loadingMessage.classList.remove('hidden-section');
+                createGamePlusBtn.classList.add('hidden-section'); // Keep button hidden on general errors
+            }
+        }
+
+        // Function to render join link for an existing session
+        function renderExistingJoinLink(sessionId) {
+            const loginPageBaseURL = window.location.origin.includes('localhost') ? 'http://localhost:5500/player-login.html' : `${window.location.origin}/player-login.html`;
+            const joinLink = `${loginPageBaseURL}?sessionId=${sessionId}`;
+            joinLinkInput.value = joinLink;
+        }
+
+
+        // Function to create a new game session (triggered by plus button)
+        async function createNewGame() {
+            // Ensure Firebase is initialized before proceeding
+            if (!db || !userId) {
+                console.error("Firebase not fully initialized. Cannot create new game.");
+                loadingMessage.textContent = "Error: Bank system not ready. Please refresh."; // User-friendly message
+                loadingMessage.classList.remove('hidden-section');
+                return;
+            }
+
+            try {
+                // Clear any existing session ID to ensure a new game is created
+                localStorage.removeItem('gameSessionId'); // <--- Added this line
+
+                // Hide the plus button and show a temporary loading message if needed
+                createGamePlusBtn.classList.add('hidden-section');
+                loadingMessage.textContent = "Creating new game...";
+                loadingMessage.classList.remove('hidden-section');
+
+
+                // Generate a unique session ID (e.g., using Firestore doc ID)
+                const gameSessionRef = doc(collection(db, `artifacts/${appId}/public/data/gameSessions`));
+                const sessionId = gameSessionRef.id;
+
+                // Save initial game session data (e.g., owner ID)
+                await setDoc(gameSessionRef, {
+                    ownerId: userId, // The bank owner's ID
+                    createdAt: serverTimestamp(),
+                    status: 'waiting_for_players'
+                });
+
+                console.log("New game session created with ID:", sessionId);
+
+                // Construct the join link
+                const loginPageBaseURL = window.location.origin.includes('localhost') ? 'http://localhost:5500/player-login.html' : `${window.location.origin}/player-login.html`;
+                const joinLink = `${loginPageBaseURL}?sessionId=${sessionId}`;
+
+                joinLinkInput.value = joinLink;
+                joinLinkContainer.classList.remove('hidden-section'); // Show join link container
+                loadingMessage.classList.add('hidden-section'); // Hide loading message
+
+                // Store the current session ID in localStorage for bank-side operations
+                localStorage.setItem('gameSessionId', sessionId);
+
+            } catch (error) {
+                console.error("Error creating new game:", error);
+                // Optionally show a user-friendly error message on the page
+                loadingMessage.textContent = "Error creating new game. Please try again.";
+                loadingMessage.classList.remove('hidden-section');
+                createGamePlusBtn.classList.remove('hidden-section', 'opacity-50', 'cursor-not-allowed'); // Show button again on error and re-enable
+                createGamePlusBtn.disabled = false;
+            }
+        }
+
+        // Event Listeners
+        createGamePlusBtn.addEventListener('click', createNewGame);
+        copyLinkBtn.addEventListener('click', () => {
+            const tempInput = document.createElement('textarea');
+            tempInput.value = joinLinkInput.value;
+            document.body.appendChild(tempInput);
+            tempInput.select();
+            document.execCommand('copy');
+            document.body.removeChild(tempInput);
+
+            copyLinkBtn.textContent = 'Copied!';
+            setTimeout(() => {
+                copyLinkBtn.textContent = 'Copy Link';
+            }, 2000);
+        });
+
+        // Initialize Firebase on page load
+        window.onload = initializeFirebase;
+    </script>
+</body>
+</html>

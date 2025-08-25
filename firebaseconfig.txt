@@ -1,0 +1,19 @@
+const firebaseConfig = {
+          apiKey: "AIzaSyAx2GBREwAJ-VX0x_kueY8IK51E-EvVJqA", // REPLACE THIS
+          authDomain: "the-game-of-life-bank.firebaseapp.com", // REPLACE THIS
+          projectId: "the-game-of-life-bank", // REPLACE THIS
+          storageBucket: "the-game-of-life-bank.firebasestorage.app", // REPLACE THIS
+          messagingSenderId: "793225047291", // REPLACE THIS
+          appId: "1:793225047291:web:fa24d214f0f762a768545e", // REPLACE THIS
+          // measurementId: "G-8HYQL0V1MJ" // Optional: Include if present in your Firebase config
+        };
+
+        /* MODIFIED: Removed vertical borders between columns */
+        /* .transactions-table-container th:first-child,
+        .transactions-table-container td:first-child {
+            border-right: 1px solid rgba(255, 255, 255, 0.3);
+        }
+        .transactions-table-container th:last-child,
+        .transactions-table-container td:last-child {
+            border-left: 1px solid rgba(255, 255, 255, 0.3);
+        } */
