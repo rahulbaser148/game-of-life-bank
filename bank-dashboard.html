@@ -205,8 +205,8 @@
         const interestRateInput = document.getElementById('interestRateInput');
         const setInterestBtn = document.getElementById('setInterestBtn');
         const investBtn = document.getElementById('investBtn');
-        const professions = ["Business", "Doctor", "Lawyer", "Teacher", "Journalist", "Physicist", "University Degree"];
-        const professionIncomes = { "Doctor": 50000, "Lawyer": 50000, "Teacher": 20000, "Physicist": 30000, "Journalist": 24000, "Business": 12000, "University Degree": 16000, "Unemployed": 0 };
+        const professions = ["BUSINESS-M", "BUSINESS-O", "DOCTOR", "LAWYER", "TEACHER", "JOURNALIST", "PHYSICIST", "UNIVERSITY DEGREE"];
+        const professionIncomes = { "DOCTOR": 50000, "LAWYER": 50000, "TEACHER": 20000, "PHYSICIST": 30000, "JOURNALIST": 24000, "BUSINESS-M": 12000, "BUSINESS-O": 12000, "UNIVERSITY DEGREE": 16000, "UNEMPLOYED": 0 };
         const GOL_BANK_ACCOUNT = { name: "GOL Bank", accountNo: "GLB-3000" };
 
         // ▼▼▼ START OF JAVASCRIPT MODIFICATION ▼▼▼
@@ -320,7 +320,7 @@
             modalPlayerLoan.textContent = `$${(playerData.loan || 0).toLocaleString()}`;
             salaryDisplay.textContent = `$${(playerData.currentSalary || professionIncomes[playerData.profession] || 0).toLocaleString()}`;
             interestRateInput.value = playerData.loanInterest || 25;
-            if (playerData.profession === 'Business') {
+            if (playerData.profession === 'BUSINESS-M') {
                 investBtn.classList.remove('hidden');
             } else {
                 investBtn.classList.add('hidden');
@@ -387,7 +387,7 @@
                     const salary = playerData.currentSalary || professionIncomes[playerData.profession] || 0;
                     paidAmount = salary;
                     let nextSalary = salary;
-                    if (playerData.profession === 'Business') {
+                    if (playerData.profession === 'BUSINESS-M') {
                         nextSalary += 1000;
                     }
                     updatedData = {
@@ -431,7 +431,7 @@
                     const playerDoc = await transaction.get(playerRef);
                     if (!playerDoc.exists()) throw "Player not found.";
                     const playerData = playerDoc.data();
-                    if (playerData.profession !== 'Business') throw "Only Business players can invest.";
+                    if (playerData.profession !== 'BUSINESS-M') throw "Only BUSINESS-M players can invest.";
                     if ((playerData.balance || 0) < INVESTMENT_COST) throw `Insufficient funds for investment. Requires $${INVESTMENT_COST.toLocaleString()}.`;
                     
                     updatedSalary = (playerData.currentSalary || 0) + SALARY_INCREMENT;
