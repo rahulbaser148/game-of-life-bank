@@ -160,11 +160,13 @@
         </div>
     </section>
 
+    <!-- ▼▼▼ START OF HTML MODIFICATIONS ▼▼▼ -->
     <div id="playerModal" class="modal-overlay hidden-section">
         <div id="modalContent" class="modal-content">
             <button id="closeModalBtn" class="absolute top-3 right-3 text-gray-500 hover:text-gray-800 text-2xl font-bold z-20">&times;</button>
             <h3 class="text-2xl font-bold text-blue-700 mb-2 text-center">Player Details</h3>
             
+            <!-- Tab Buttons -->
             <div id="modalTabs" class="flex justify-around border-b border-gray-200 mb-2">
                 <button data-panel="1" class="modal-tab-button active">Info</button>
                 <button data-panel="2" class="modal-tab-button">Send</button>
@@ -172,11 +174,11 @@
                 <button data-panel="4" class="modal-tab-button">Profession</button>
             </div>
 
+            <!-- Slider Wrapper -->
             <div class="modal-slider-wrapper">
                 <div id="modalSlider" class="modal-slider">
                     <!-- Panel 1: Information -->
                     <div class="modal-panel">
-                        <!-- ▼▼▼ START OF HTML MODIFICATION ▼▼▼ -->
                         <div class="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2">
                             <div>
                                 <p class="text-xl text-blue-800 font-semibold"><span id="modalPlayerName"></span></p>
@@ -188,7 +190,6 @@
                                 <p class="text-lg font-bold text-red-600"><span id="modalPlayerLoan"></span></p>
                             </div>
                         </div>
-                        <!-- ▲▲▲ END OF HTML MODIFICATION ▲▲▲ -->
                     </div>
                     <!-- Panel 2: Send Money & Payday -->
                     <div class="modal-panel">
