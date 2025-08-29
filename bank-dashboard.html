@@ -210,17 +210,20 @@
                         </div>
                     </div>
                     <!-- Panel 3: Loan Management -->
-                    <div class="modal-panel">
-                        <div class="flex flex-col space-y-4">
-                            <div class="flex items-center gap-2">
-                               <input type="number" id="loanAmountInput" placeholder="$20,000s" class="flex-grow p-2 border border-gray-300 rounded-md" min="0" step="20000">
-                               <button id="takeLoanBtn" class="bg-black hover:bg-gray-800 text-white font-bold py-2 px-4 rounded-md">Loan</button>
+                    <div class="modal-panel flex items-center justify-center">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-4">
+                        
+                            <div class="flex flex-col items-center">
+                                <input type="number" id="loanAmountInput" placeholder="$20,000" class="w-full p-2 border border-gray-300 rounded-md" min="0" step="20000">
+                                <button id="takeLoanBtn" class="mt-2 w-full bg-black hover:bg-gray-800 text-white font-bold py-2 px-6 rounded-md">Loan</button>
                             </div>
-                           <div class="flex items-center gap-2">
-                               <input type="number" id="interestRateInput" class="flex-grow p-2 border border-gray-300 rounded-md" value="25" min="0" step="5">
-                               <span class="font-bold text-gray-600">%</span>
-                               <button id="setInterestBtn" class="bg-black hover:bg-gray-800 text-white font-bold py-2 px-4 rounded-md">SET</button>
-                           </div>
+
+                            <div class="flex items-center justify-center sm:justify-start">
+                                <input type="number" id="interestRateInput" class="w-16 p-2 border border-gray-300 rounded-md" value="25" min="0" step="5">
+                                <span class="font-bold text-gray-600 mx-2">%</span>
+                                <button id="setInterestBtn" class="bg-black hover:bg-gray-800 text-white font-bold py-2 px-4 rounded-md">SET</button>
+                            </div>
+
                         </div>
                     </div>
                     <!-- Panel 4: Profession -->
